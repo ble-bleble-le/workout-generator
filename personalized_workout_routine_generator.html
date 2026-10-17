@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Target Routine & Rider Fitness Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0B0F19',
+                            card: '#141C2E',
+                            border: '#212D45',
+                            hover: '#1B263E'
+                        },
+                        accent: {
+                            pink: '#FF2E93',
+                            teal: '#00F2FE',
+                            lime: '#39FF14',
+                            amber: '#FFB800',
+                            purple: '#A855F7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0B0F19;
+            color: #F3F4F6;
+        }
+        .glass-card {
+            background: rgba(20, 28, 46, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .focus-chip-selected {
+            background: linear-gradient(135deg, rgba(255, 46, 147, 0.25), rgba(0, 242, 254, 0.2));
+            border-color: #FF2E93 !important;
+            box-shadow: 0 0 15px rgba(255, 46, 147, 0.3);
+            color: #ffffff !important;
+        }
+        .focus-chip-rider-selected {
+            background: linear-gradient(135deg, rgba(255, 184, 0, 0.25), rgba(168, 85, 247, 0.2));
+            border-color: #FFB800 !important;
+            box-shadow: 0 0 15px rgba(255, 184, 0, 0.35);
+            color: #FFE89C !important;
+        }
+        .neon-glow-pink {
+            box-shadow: 0 0 20px rgba(255, 46, 147, 0.3);
+        }
+        .neon-glow-teal {
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-gray-100 min-h-screen flex flex-col pb-24 md:pb-0 md:pl-64">
+
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="hidden md:flex flex-col fixed left-0 top-0 h-full w-64 glass-card border-r border-dark-border z-40 p-5">
+        <div class="flex items-center gap-3 mb-8 px-2">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-accent-pink via-purple-500 to-accent-teal flex items-center justify-center text-white font-black text-xl shadow-lg neon-glow-pink">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-accent-pink to-accent-teal">EQUESTRI<span class="text-white">FIT</span></h1>
+                <p class="text-[10px] text-accent-teal font-bold tracking-widest uppercase">Target & Rider Sculpt</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 space-y-2">
+            <button onclick="switchTab('generator')" id="nav-generator" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 text-accent-pink bg-dark-hover border-l-4 border-accent-pink">
+                <i data-lucide="sliders" class="w-5 h-5"></i> Routine Generator
+            </button>
+            <button onclick="switchTab('history')" id="nav-history" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-dark-hover">
+                <i data-lucide="history" class="w-5 h-5"></i> Completed Logs
+            </button>
+            <button onclick="switchTab('templates')" id="nav-templates" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-dark-hover">
+                <i data-lucide="bookmark" class="w-5 h-5"></i> Saved Routines
+            </button>
+        </nav>
+
+        <!-- Dynamic Rider Status Badge -->
+        <div class="mt-auto p-4 rounded-2xl bg-dark-card border border-dark-border">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i> Riding Mode
+                </span>
+                <span id="sidebar-riding-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">INACTIVE</span>
+            </div>
+            <p class="text-[11px] text-gray-400 leading-relaxed">Turn on "Riding Today" to lower leg fatigue & prevent stiffness before riding.</p>
+        </div>
+    </aside>
+
+    <!-- MOBILE BOTTOM NAVBAR -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 glass-card border-t border-dark-border z-40 px-4 py-3 flex justify-around items-center">
+        <button onclick="switchTab('generator')" id="mnav-generator" class="mobile-nav-item flex flex-col items-center gap-1 text-accent-pink">
+            <i data-lucide="sliders" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold">Generator</span>
+        </button>
+        <button onclick="switchTab('history')" id="mnav-history" class="mobile-nav-item flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="history" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold">Logs</span>
+        </button>
+        <button onclick="switchTab('templates')" id="mnav-templates" class="mobile-nav-item flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="bookmark" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold">Saved</span>
+        </button>
+    </nav>
+
+    <!-- TOP HEADER BAR -->
+    <header class="sticky top-0 z-30 glass-card border-b border-dark-border px-6 py-4 flex justify-between items-center">
+        <div>
+            <h2 id="header-title" class="text-lg font-extrabold text-white">Custom Target Builder</h2>
+            <p id="header-subtitle" class="text-xs text-gray-400">Select focus areas & build your tailored routine</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 bg-dark-card border border-dark-border px-3 py-1.5 rounded-xl text-xs font-bold text-amber-400">
+                <i data-lucide="flame" class="w-4 h-4 fill-current text-amber-400"></i>
+                <span id="streak-counter-top">0 Workout Streak</span>
+            </div>
+            <button onclick="resetDataConfirmation()" title="Reset All Data" class="p-2 rounded-xl bg-dark-card border border-dark-border text-gray-400 hover:text-red-400 transition">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTENT -->
+    <main class="p-4 md:p-8 flex-1 max-w-5xl w-full mx-auto space-y-6">
+
+        <!-- TAB 1: GENERATOR & ACTIVE WORKOUT -->
+        <section id="tab-generator" class="tab-content space-y-6">
+
+            <!-- ROUTINE GENERATOR CONTROLS CARD -->
+            <div id="generator-controls-card" class="glass-card p-6 rounded-3xl border border-dark-border space-y-6">
+                
+                <!-- STEP 1: TARGET FOCUS AREAS -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-xs font-extrabold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-accent-pink"></span> 1. Select Target Areas Today (Multi-Select)
+                        </label>
+                        <span class="text-[11px] text-accent-pink font-semibold" id="selected-focus-count">0 areas selected</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="target-chips-container">
+                        <!-- Thighs -->
+                        <button onclick="toggleTargetArea('Thighs')" id="chip-Thighs" class="target-chip p-3.5 rounded-2xl border border-dark-border bg-dark-card text-gray-300 hover:border-gray-500 text-left font-bold text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center gap-2.5">
+                                <i data-lucide="footprints" class="w-4 h-4 text-cyan-400"></i>
+                                <span>Thighs</span>
+                            </div>
+                            <i data-lucide="check" class="w-4 h-4 opacity-0 check-icon transition"></i>
+                        </button>
+
+                        <!-- Bootay -->
+                        <button onclick="toggleTargetArea('Bootay')" id="chip-Bootay" class="target-chip p-3.5 rounded-2xl border border-dark-border bg-dark-card text-gray-300 hover:border-gray-500 text-left font-bold text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center gap-2.5">
+                                <i data-lucide="flame" class="w-4 h-4 text-accent-pink"></i>
+                                <span>Bootay</span>
+                            </div>
+                            <i data-lucide="check" class="w-4 h-4 opacity-0 check-icon transition"></i>
+                        </button>
+
+                        <!-- Calves -->
+                        <button onclick="toggleTargetArea('Calves')" id="chip-Calves" class="target-chip p-3.5 rounded-2xl border border-dark-border bg-dark-card text-gray-300 hover:border-gray-500 text-left font-bold text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center gap-2.5">
+                                <i data-lucide="zap" class="w-4 h-4 text-emerald-400"></i>
+                                <span>Calves</span>
+                            </div>
+                            <i data-lucide="check" class="w-4 h-4 opacity-0 check-icon transition"></i>
+                        </button>
+
+                        <!-- Waist -->
+                        <button onclick="toggleTargetArea('Waist')" id="chip-Waist" class="target-chip p-3.5 rounded-2xl border border-dark-border bg-dark-card text-gray-300 hover:border-gray-500 text-left font-bold text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center gap-2.5">
+                                <i data-lucide="crosshair" class="w-4 h-4 text-purple-400"></i>
+                                <span>Waist</span>
+                            </div>
+                            <i data-lucide="check" class="w-4 h-4 opacity-0 check-icon transition"></i>
+                        </button>
+
+                        <!-- Abs -->
+                        <button onclick="toggleTargetArea('Abs')" id="chip-Abs" class="target-chip p-3.5 rounded-2xl border border-dark-border bg-dark-card text-gray-300 hover:border-gray-500 text-left font-bold text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center gap-2.5">
+                                <i data-lucide="disc" class="w-4 h-4 text-amber-400"></i>
+                                <span>Abs</span>
+                            </div>
+                            <i data-lucide="check" class="w-4 h-4 opacity-0 check-icon transition"></i>
+                        </button>
+
+                        <!-- Arms -->
+                        <button onclick="toggleTargetArea('Arms')" id="chip-Arms" class="target-chip p-3.5 rounded-2xl border border-dark-border bg-dark-card text-gray-300 hover:border-gray-500 text-left font-bold text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center gap-2.5">
+                                <i data-lucide="biceps" class="w-4 h-4 text-blue-400"></i>
+                                <span>Arms</span>
+                            </div>
+                            <i data-lucide="check" class="w-4 h-4 opacity-0 check-icon transition"></i>
+                        </button>
+
+                        <!-- Horse Riding -->
+                        <button onclick="toggleTargetArea('Horse Riding')" id="chip-Horse Riding" class="target-chip sm:col-span-2 p-3.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:border-amber-400 text-left font-extrabold text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center gap-2.5">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                                <span>Horse Riding (Improve Riding) 🐴</span>
+                            </div>
+                            <i data-lucide="check" class="w-4 h-4 opacity-0 check-icon transition"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DURATION & DIFFICULTY -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Duration -->
+                    <div>
+                        <label class="block text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-2.5">
+                            2. Workout Duration
+                        </label>
+                        <div class="grid grid-cols-3 gap-2" id="duration-buttons">
+                            <button onclick="selectDuration('Short')" id="dur-Short" class="dur-opt p-3 rounded-xl border border-dark-border bg-dark-card text-gray-300 text-center font-bold text-xs transition">
+                                Short
+                                <span class="block text-[10px] text-gray-400 font-normal mt-0.5">10-15 min</span>
+                            </button>
+                            <button onclick="selectDuration('Medium')" id="dur-Medium" class="dur-opt active p-3 rounded-xl border border-accent-pink bg-accent-pink/20 text-white text-center font-bold text-xs transition">
+                                Medium
+                                <span class="block text-[10px] text-accent-pink font-normal mt-0.5">20-30 min</span>
+                            </button>
+                            <button onclick="selectDuration('Long')" id="dur-Long" class="dur-opt p-3 rounded-xl border border-dark-border bg-dark-card text-gray-300 text-center font-bold text-xs transition">
+                                Long
+                                <span class="block text-[10px] text-gray-400 font-normal mt-0.5">45+ min</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Difficulty -->
+                    <div>
+                        <label class="block text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-2.5">
+                            3. Difficulty / Intensity
+                        </label>
+                        <div class="grid grid-cols-3 gap-2" id="difficulty-buttons">
+                            <button onclick="selectDifficulty('Easy')" id="diff-Easy" class="diff-opt p-3 rounded-xl border border-dark-border bg-dark-card text-gray-300 text-center font-bold text-xs transition">
+                                Easy
+                                <span class="block text-[10px] text-gray-400 font-normal mt-0.5">Light effort</span>
+                            </button>
+                            <button onclick="selectDifficulty('Medium')" id="diff-Medium" class="diff-opt active p-3 rounded-xl border border-accent-pink bg-accent-pink/20 text-white text-center font-bold text-xs transition">
+                                Medium
+                                <span class="block text-[10px] text-accent-pink font-normal mt-0.5">Balanced</span>
+                            </button>
+                            <button onclick="selectDifficulty('Hard')" id="diff-Hard" class="diff-opt p-3 rounded-xl border border-dark-border bg-dark-card text-gray-300 text-center font-bold text-xs transition">
+                                Hard
+                                <span class="block text-[10px] text-gray-400 font-normal mt-0.5">Challenging</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SPECIAL "RIDING TODAY?" TOGGLE -->
+                <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-dark-card to-amber-500/10 border border-amber-500/40 flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 rounded-xl bg-amber-500/20 text-amber-400 flex-shrink-0">
+                            <i data-lucide="shield" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-extrabold text-white flex items-center gap-2">
+                                Riding Today? 🐴
+                                <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold px-2 py-0.5 rounded-full">Pre-Ride Protector</span>
+                            </h4>
+                            <p class="text-xs text-gray-300 mt-0.5">Automatically optimizes routine so you are NOT sore for riding. Focuses on hip flexors, core seat, adductors & mobility.</p>
+                        </div>
+                    </div>
+
+                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                        <input type="checkbox" id="riding-today-checkbox" onchange="toggleRidingToday(this.checked)" class="sr-only peer">
+                        <div class="w-12 h-6 bg-dark-bg border border-dark-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500 peer-checked:after:bg-white"></div>
+                    </label>
+                </div>
+
+                <!-- GENERATE ACTION BUTTON -->
+                <button onclick="generateCustomRoutine()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-accent-pink via-purple-500 to-accent-teal text-white font-black text-base shadow-lg neon-glow-pink hover:opacity-95 transition flex items-center justify-center gap-2 tracking-wide">
+                    <i data-lucide="sparkles" class="w-5 h-5 fill-current"></i> Create My Customized Routine
+                </button>
+            </div>
+
+            <!-- ACTIVE WORKOUT EXECUTION VIEW -->
+            <div id="active-workout-view" class="hidden glass-card p-6 rounded-3xl border border-accent-pink/40 neon-glow-pink space-y-6">
+
+                <!-- Header Stats Bar -->
+                <div class="flex flex-wrap justify-between items-center gap-4 pb-4 border-b border-dark-border">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5" id="active-workout-tags">
+                            <!-- Tags insertion -->
+                        </div>
+                        <h2 class="text-2xl font-black text-white" id="active-workout-name">Custom Generated Workout</h2>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="bg-dark-bg px-4 py-2 rounded-2xl border border-dark-border text-center">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Time Elapsed</span>
+                            <span class="text-lg font-mono font-bold text-accent-teal" id="workout-stopwatch">00:00</span>
+                        </div>
+                        <button onclick="finishCurrentWorkout()" class="px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-400 text-dark-bg font-extrabold text-xs rounded-xl hover:opacity-95 transition shadow-lg flex items-center gap-1.5">
+                            <i data-lucide="check-circle-2" class="w-4 h-4"></i> Complete Workout
+                        </button>
+                        <button onclick="saveCurrentRoutineAsTemplate()" title="Save as Preset Routine" class="p-2.5 bg-dark-bg border border-dark-border hover:border-accent-pink text-accent-pink rounded-xl transition">
+                            <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- HORSE RIDING TODAY ALERT BANNER -->
+                <div id="horse-riding-alert-banner" class="hidden p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs flex items-center gap-3">
+                    <i data-lucide="info" class="w-5 h-5 flex-shrink-0 text-amber-400"></i>
+                    <div>
+                        <strong class="font-extrabold text-amber-300">Riding Today Mode Active:</strong> We've scaled down heavy eccentric leg load and added hip mobility, deep posture alignment, and adductor control so you feel loose and stable in the saddle.
+                    </div>
+                </div>
+
+                <!-- OVERALL PROGRESS BAR -->
+                <div>
+                    <div class="flex justify-between items-center text-xs font-bold mb-2">
+                        <span class="text-gray-300 flex items-center gap-1"><i data-lucide="target" class="w-4 h-4 text-accent-pink"></i> Overall Workout Progress</span>
+                        <span class="text-accent-teal font-mono" id="progress-percentage">0% Completed</span>
+                    </div>
+                    <div class="w-full bg-dark-bg rounded-full h-3.5 border border-dark-border overflow-hidden">
+                        <div id="progress-bar-fill" class="bg-gradient-to-r from-accent-pink via-purple-500 to-accent-teal h-full rounded-full transition-all duration-300 w-0"></div>
+                    </div>
+                </div>
+
+                <!-- EXERCISES LIST WITH INTERACTIVE SET CHECKBOXES -->
+                <div id="active-exercise-cards-container" class="space-y-4">
+                    <!-- Dynamic Exercises insertion -->
+                </div>
+
+                <!-- ACTION BUTTONS: SWAP / ADD EXERCISE -->
+                <div class="flex flex-wrap justify-between items-center gap-3 pt-4 border-t border-dark-border">
+                    <button onclick="openAddCustomExModal()" class="px-4 py-2.5 bg-dark-bg border border-dark-border hover:border-accent-pink text-accent-pink text-xs font-bold rounded-xl transition flex items-center gap-2">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Extra Exercise
+                    </button>
+                    <button onclick="toggleGeneratorView(true)" class="px-4 py-2.5 bg-dark-bg border border-dark-border hover:border-gray-400 text-gray-300 text-xs font-bold rounded-xl transition flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-4 h-4"></i> Change Focus / Parameters
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 2: COMPLETED LOGS & STATS -->
+        <section id="tab-history" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="glass-card p-5 rounded-2xl border border-dark-border">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Total Workouts</span>
+                    <h3 class="text-2xl font-black text-white" id="stat-total-workouts">0</h3>
+                    <p class="text-xs text-emerald-400 mt-1 flex items-center gap-1"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Logged in browser</p>
+                </div>
+                <div class="glass-card p-5 rounded-2xl border border-dark-border">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Riding Sessions</span>
+                    <h3 class="text-2xl font-black text-amber-400" id="stat-riding-count">0</h3>
+                    <p class="text-xs text-amber-400/80 mt-1">Equestrian focused</p>
+                </div>
+                <div class="glass-card p-5 rounded-2xl border border-dark-border">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Current Streak</span>
+                    <h3 class="text-2xl font-black text-accent-pink" id="stat-current-streak">0 Workouts</h3>
+                    <p class="text-xs text-accent-pink/80 mt-1">Keep the momentum going!</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl border border-dark-border">
+                <h3 class="text-base font-extrabold text-white mb-4 flex items-center gap-2">
+                    <i data-lucide="history" class="w-5 h-5 text-accent-pink"></i> Completed Workout Logs
+                </h3>
+                <div id="history-logs-container" class="space-y-3">
+                    <!-- Dynamic History -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: SAVED ROUTINE TEMPLATES -->
+        <section id="tab-templates" class="tab-content hidden space-y-6">
+            <div>
+                <h2 class="text-xl font-bold text-white">Saved Routine Presets</h2>
+                <p class="text-xs text-gray-400">Launch your favorite target combinations with one tap</p>
+            </div>
+            <div id="saved-templates-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Saved templates -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- REST TIMER FLOATING WIDGET -->
+    <div id="rest-timer-widget" class="fixed bottom-20 md:bottom-6 right-6 z-50 hidden glass-card p-5 rounded-2xl border border-accent-pink/50 shadow-2xl bg-dark-card/95 max-w-xs w-full">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-extrabold text-accent-pink uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="timer" class="w-4 h-4"></i> Rest Interval
+            </span>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleAudioBeep()" id="audio-toggle-btn" class="text-gray-400 hover:text-accent-teal text-xs" title="Toggle Beep Sound">
+                    <i data-lucide="volume-2" class="w-4 h-4"></i>
+                </button>
+                <button onclick="closeRestTimer()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+        </div>
+        <div class="text-center py-2">
+            <div id="rest-timer-display" class="text-4xl font-mono font-black text-white tracking-widest">00:45</div>
+            <p class="text-[11px] text-gray-400 mt-1">Shake out muscles & breathe</p>
+        </div>
+        <div class="flex gap-2 mt-3">
+            <button onclick="adjustRestTime(-10)" class="flex-1 py-1.5 bg-dark-bg border border-dark-border rounded-xl text-xs font-semibold text-gray-300 hover:bg-dark-hover">-10s</button>
+            <button onclick="adjustRestTime(+30)" class="flex-1 py-1.5 bg-dark-bg border border-dark-border rounded-xl text-xs font-semibold text-accent-teal hover:bg-dark-hover">+30s</button>
+            <button onclick="closeRestTimer()" class="flex-1 py-1.5 bg-emerald-400 text-dark-bg rounded-xl text-xs font-bold hover:bg-emerald-300">Skip</button>
+        </div>
+    </div>
+
+    <!-- MODAL: EXERCISE INSTRUCTION & RIDER TIPS -->
+    <div id="modal-exercise-guide" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card p-6 rounded-3xl border border-dark-border w-full max-w-lg bg-dark-card space-y-4">
+            <div class="flex justify-between items-center pb-3 border-b border-dark-border">
+                <div class="flex items-center gap-2">
+                    <span id="modal-guide-area" class="text-[10px] font-bold bg-accent-pink/20 text-accent-pink px-2.5 py-0.5 rounded-full uppercase">Target Focus</span>
+                    <h3 class="text-base font-extrabold text-white" id="modal-guide-title">Exercise Guide</h3>
+                </div>
+                <button onclick="closeModal('modal-exercise-guide')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="space-y-3 text-xs text-gray-300 leading-relaxed">
+                <div class="p-3.5 rounded-2xl bg-dark-bg border border-dark-border">
+                    <strong class="block text-accent-teal font-extrabold uppercase mb-1">How To Perform:</strong>
+                    <p id="modal-guide-how"></p>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200">
+                    <strong class="block text-amber-400 font-extrabold uppercase mb-1 flex items-center gap-1.5">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> Rider Benefit & Seat Stability:
+                    </strong>
+                    <p id="modal-guide-rider"></p>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-dark-border flex justify-end">
+                <button onclick="closeModal('modal-exercise-guide')" class="px-5 py-2 rounded-xl bg-accent-pink text-white text-xs font-bold">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD CUSTOM EXERCISE -->
+    <div id="modal-add-ex" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card p-6 rounded-3xl border border-dark-border w-full max-w-md bg-dark-card">
+            <div class="flex justify-between items-center pb-3 border-b border-dark-border">
+                <h3 class="text-base font-extrabold text-white">Add Custom Exercise</h3>
+                <button onclick="closeModal('modal-add-ex')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="py-4 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Exercise Name</label>
+                    <input type="text" id="custom-ex-title" placeholder="e.g. Bulgarian Split Squat" class="w-full px-4 py-2.5 rounded-xl bg-dark-bg border border-dark-border text-white text-sm focus:outline-none focus:border-accent-pink">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Instructions / Focus</label>
+                    <input type="text" id="custom-ex-inst" placeholder="Keep tall posture, slow lower" class="w-full px-4 py-2.5 rounded-xl bg-dark-bg border border-dark-border text-white text-sm focus:outline-none focus:border-accent-pink">
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Sets</label>
+                        <input type="number" id="custom-ex-sets" value="3" min="1" max="10" class="w-full px-3 py-2 rounded-xl bg-dark-bg border border-dark-border text-white text-sm text-center">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Reps / Hold</label>
+                        <input type="text" id="custom-ex-reps" value="12 reps" class="w-full px-3 py-2 rounded-xl bg-dark-bg border border-dark-border text-white text-sm text-center">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Rest (sec)</label>
+                        <input type="number" id="custom-ex-rest" value="45" class="w-full px-3 py-2 rounded-xl bg-dark-bg border border-dark-border text-white text-sm text-center">
+                    </div>
+                </div>
+            </div>
+            <div class="pt-3 border-t border-dark-border flex justify-end gap-2">
+                <button onclick="closeModal('modal-add-ex')" class="px-4 py-2 rounded-xl border border-dark-border text-gray-300 text-xs font-bold">Cancel</button>
+                <button onclick="appendCustomExerciseToActive()" class="px-4 py-2 rounded-xl bg-accent-pink text-white text-xs font-extrabold hover:bg-pink-600">Add Exercise</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIO FOR TIMER BEEP -->
+    <audio id="beep-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <!-- MASTER JAVASCRIPT APP LOGIC -->
+    <script>
+        // --- MASTER EXERCISE DATABASE BASED ON YOUR FOCUS AREAS ---
+        const TARGET_EXERCISES = {
+            'Thighs': [
+                { name: 'Inner Thigh Adductor Squeezes', reps: '15 reps (3s squeeze)', inst: 'Squeeze pillow or soft ball between knees. Focus on inner thigh control.', riderTip: 'Directly builds leg grip in saddle without heavy quad soreness.', rest: 45 },
+                { name: 'Sumo Squats', reps: '12-15 reps', inst: 'Wide stance, toes pointed outward 45 degrees. Lower with chest up.', riderTip: 'Opens hip flexors and strengthens inner quads and adductors for lower leg stability.', rest: 60 },
+                { name: 'Curtsy Lunges', reps: '10 reps/side', inst: 'Step backward crosswise, keep front knee tracking over toes.', riderTip: 'Enhances dynamic hip mobility and lateral balance when absorbing horse motion.', rest: 60 },
+                { name: 'Side-Lying Leg Raises', reps: '15 reps/side', inst: 'Lift top leg smoothly, keep toe pointing slightly downward.', riderTip: 'Strengthens outer thigh and hip stabilizers crucial for stirrup balance.', rest: 45 }
+            ],
+            'Bootay': [
+                { name: 'Glute Bridges (or Single Leg)', reps: '15 reps', inst: 'Drive hips upward, squeeze glutes firmly at top for 2 seconds.', riderTip: 'Essential for an independent seat and pelvic control in trot/canter.', rest: 45 },
+                { name: 'Donkey Kicks', reps: '12-15 reps/side', inst: 'On hands and knees, push heel towards ceiling keeping 90 degree knee bend.', riderTip: 'Isolates glute max to support lower back and prevent rider slouching.', rest: 45 },
+                { name: 'Fire Hydrants', reps: '12 reps/side', inst: 'Lift knee laterally out to side, keeping hips level.', riderTip: 'Strengthens gluteus medius for steady weight distribution in stirrups.', rest: 45 },
+                { name: 'Bulgarian / Chair Split Squats', reps: '10 reps/side', inst: 'Back foot elevated, lower rear knee toward floor with upright chest.', riderTip: 'Unilateral strength balances rider symmetry and prevents leaning to one side.', rest: 60 }
+            ],
+            'Calves': [
+                { name: 'Heels-Down Wall Calf Raises', reps: '20 reps', inst: 'Rise onto toes, then slowly lower heels lower than level ground.', riderTip: 'Builds calf flexibility & Achilles tendon length needed to keep "heels down".', rest: 40 },
+                { name: 'Single-Leg Calf Holds', reps: '12 reps/leg (3s hold)', inst: 'Balance on one foot, raise high on ball of foot and pause.', riderTip: 'Improves ankle stiffness control and weight absorption in stirrups.', rest: 40 },
+                { name: 'Seated Calf Pulses', reps: '20 reps', inst: 'Seated with weight on knees, pulse calves slowly through full range.', riderTip: 'Targets soleus muscle for endurance during long trotting or two-point posturing.', rest: 30 }
+            ],
+            'Waist': [
+                { name: 'Russian Twists', reps: '20 total twists', inst: 'Sit back at 45 degrees, rotate shoulders and ribs from side to side.', riderTip: 'Builds rotational core stability for bending and turning horse smoothly.', rest: 45 },
+                { name: 'Side Plank Hip Dips', reps: '10 reps/side', inst: 'Hold side plank, gently dip hip toward floor and lift back up.', riderTip: 'Builds strong obliques to keep shoulders level over fence jumps and turns.', rest: 45 },
+                { name: 'Bicycle Crunches', reps: '16 total reps', inst: 'Opposite elbow to knee, slow controlled cross-body contraction.', riderTip: 'Refines oblique control for subtle rider weight-shift aids.', rest: 45 },
+                { name: 'Standing Torso Woodchoppers', reps: '12 reps/side', inst: 'Reach diagonally across body, turn hips and core smoothly.', riderTip: 'Simulates rein control and upper body balance during sudden horse movements.', rest: 45 }
+            ],
+            'Abs': [
+                { name: 'Deadbug Core Presses', reps: '12 reps total', inst: 'Lie on back, lower opposite arm/leg while pressing lower back firmly into floor.', riderTip: 'Protects lower back from saddle impact and maintains deep core seat.', rest: 45 },
+                { name: 'Forearm Plank Hold', reps: '30-45 sec hold', inst: 'Straight line from shoulders to heels, contract deep abdominal wall.', riderTip: 'The fundamental hold for maintaining a quiet, stable rider posture.', rest: 45 },
+                { name: 'Reverse Crunches', reps: '12 reps', inst: 'Lift knees toward chest using lower abs, lower hips with control.', riderTip: 'Develops pelvic tilt control essential for sitting trot and absorbing bounce.', rest: 45 },
+                { name: 'Bird-Dog Balancing Holds', reps: '10 reps/side', inst: 'Extend opposite arm and leg, hold 2s with parallel hips.', riderTip: 'Trains cross-body diagonal stability mirroring equine gait balance.', rest: 40 }
+            ],
+            'Arms': [
+                { name: 'Incline Push-Ups / Knee Push-Ups', reps: '10-12 reps', inst: 'Hands on bench/wall/floor, lower chest with elbows 45 degrees back.', riderTip: 'Builds chest and arm strength for soft, elastic contact with reins.', rest: 60 },
+                { name: 'Bicep & Forearm Curls', reps: '12-15 reps', inst: 'Keep elbows tucked at sides, curl upward squeezing biceps.', riderTip: 'Gives forearm & finger endurance for steady rein control without tension.', rest: 45 },
+                { name: 'Tricep Chair Dips', reps: '10-12 reps', inst: 'Hands on bench, lower body close to seat, drive through palms.', riderTip: 'Keeps shoulders relaxed and down while maintaining arm posture.', rest: 60 },
+                { name: 'Prone Y-T-W Shoulder Raises', reps: '10 reps each position', inst: 'Lie face down, lift arms into Y, T, W shapes targeting upper back.', riderTip: 'Fixes rounded shoulders and creates beautiful, tall equestrian alignment.', rest: 45 }
+            ],
+            'Horse Riding': [
+                { name: 'Pelvic Bowl Seat Circles', reps: '10 slow circles each direction', inst: 'Seated or kneeling, isolate pelvis to roll in smooth circular motions.', riderTip: 'Unlocks hip stiffness so you follow the horse’s back movement fluidly.', rest: 30 },
+                { name: 'Adductor Inner Thigh Wall Squeezes', reps: '15 reps (2s hold)', inst: 'Squeeze thigh muscles into a soft ball or yoga block without lifting knees.', riderTip: 'Develops secure inner leg contact without pulling up stirrups.', rest: 40 },
+                { name: 'Equestrian Posture Wall Angels', reps: '12 slow reps', inst: 'Back flat against wall, slide elbows and back of hands up and down.', riderTip: 'Opens tight chest and builds upright tall posture required in dressage/jumping.', rest: 40 },
+                { name: 'Hip Flexor Deep Kneeling Lunge Stretch', reps: '30 sec hold/side', inst: 'Kneel on one knee, push hips gently forward, tilt pelvis slightly back.', riderTip: 'Releases tight hips caused by stirrup position, easing lower back pain.', rest: 30 },
+                { name: 'Deep Squat Ankle & Heel Mobility Shift', reps: '40 sec hold', inst: 'Hold deep squat, shift weight gently onto toes then sink deep into heels.', riderTip: 'Ensures deep heels-down position with maximum shock absorption.', rest: 30 },
+                { name: 'Cat-Cow Spinal Decompression', reps: '10 slow breaths', inst: 'Inhale arch spine, exhale round back gently while pulling belly button in.', riderTip: 'Restores spinal fluidity and relieves jarred lower back post-ride.', rest: 30 }
+            ]
+        };
+
+        // --- RIDING TODAY ADAPTATIONS ---
+        // Modifications when user checks "Riding Today?"
+        const RIDING_TODAY_MODIFIERS = {
+            maxLegSets: 2, // Scale leg sets down so quads/glutes are not exhausted
+            restBoost: 15, // Extra rest between sets
+            focusAddons: ['Horse Riding'] // Automatically integrate mobility & posture exercises
+        };
+
+        // --- APP STATE ---
+        let selectedFocusAreas = ['Bootay', 'Abs']; // Default initial selections
+        let selectedDuration = 'Medium';
+        let selectedDifficulty = 'Medium';
+        let isRidingToday = false;
+
+        let activeWorkout = JSON.parse(localStorage.getItem('equestrifit_active_session')) || null;
+        let workoutLogs = JSON.parse(localStorage.getItem('equestrifit_workout_logs')) || [];
+        let savedTemplates = JSON.parse(localStorage.getItem('equestrifit_saved_templates')) || [];
+
+        let stopwatchInterval = null;
+        let restTimerInterval = null;
+        let restTimeRemaining = 0;
+        let soundEnabled = true;
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            lucide.createIcons();
+            syncFocusChipUI();
+            loadStateData();
+
+            if (activeWorkout) {
+                renderActiveWorkoutUI();
+                toggleGeneratorView(false);
+            } else {
+                toggleGeneratorView(true);
+            }
+
+            renderHistoryLogs();
+            renderSavedTemplates();
+            updateStreakCounter();
+        };
+
+        // --- STORAGE HELPERS ---
+        function saveStateData() {
+            localStorage.setItem('equestrifit_active_session', JSON.stringify(activeWorkout));
+            localStorage.setItem('equestrifit_workout_logs', JSON.stringify(workoutLogs));
+            localStorage.setItem('equestrifit_saved_templates', JSON.stringify(savedTemplates));
+        }
+
+        function loadStateData() {
+            document.getElementById('stat-total-workouts').textContent = workoutLogs.length;
+            const ridingLogs = workoutLogs.filter(l => l.isRidingToday || l.focusAreas.includes('Horse Riding')).length;
+            document.getElementById('stat-riding-count').textContent = ridingLogs;
+        }
+
+        // --- TAB SWITCHING ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`)?.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.remove('text-accent-pink', 'bg-dark-hover', 'border-l-4', 'border-accent-pink');
+                btn.classList.add('text-gray-400');
+            });
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-gray-400');
+                activeBtn.classList.add('text-accent-pink', 'bg-dark-hover', 'border-l-4', 'border-accent-pink');
+            }
+
+            // Mobile nav bar
+            document.querySelectorAll('.mobile-nav-item').forEach(btn => btn.classList.replace('text-accent-pink', 'text-gray-400'));
+            const activeMNav = document.getElementById(`mnav-${tabId}`);
+            if (activeMNav) activeMNav.classList.replace('text-gray-400', 'text-accent-pink');
+
+            lucide.createIcons();
+        }
+
+        // --- TARGET SELECTION CONTROLS ---
+        function toggleTargetArea(area) {
+            const index = selectedFocusAreas.indexOf(area);
+            if (index > -1) {
+                if (selectedFocusAreas.length === 1) {
+                    alert('Please keep at least one focus area selected!');
+                    return;
+                }
+                selectedFocusAreas.splice(index, 1);
+            } else {
+                selectedFocusAreas.push(area);
+            }
+            syncFocusChipUI();
+        }
+
+        function syncFocusChipUI() {
+            const allAreas = ['Thighs', 'Bootay', 'Calves', 'Waist', 'Abs', 'Arms', 'Horse Riding'];
+            
+            allAreas.forEach(area => {
+                const chip = document.getElementById(`chip-${area}`);
+                if (!chip) return;
+                const checkIcon = chip.querySelector('.check-icon');
+                const isSelected = selectedFocusAreas.includes(area);
+
+                if (isSelected) {
+                    if (area === 'Horse Riding') {
+                        chip.className = 'target-chip sm:col-span-2 p-3.5 rounded-2xl border text-left font-extrabold text-xs flex items-center justify-between transition focus-chip-rider-selected';
+                    } else {
+                        chip.className = 'target-chip p-3.5 rounded-2xl border text-left font-extrabold text-xs flex items-center justify-between transition focus-chip-selected';
+                    }
+                    if (checkIcon) checkIcon.classList.remove('opacity-0');
+                } else {
+                    if (area === 'Horse Riding') {
+                        chip.className = 'target-chip sm:col-span-2 p-3.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:border-amber-400 text-left font-bold text-xs flex items-center justify-between transition';
+                    } else {
+                        chip.className = 'target-chip p-3.5 rounded-2xl border border-dark-border bg-dark-card text-gray-300 hover:border-gray-500 text-left font-bold text-xs flex items-center justify-between transition';
+                    }
+                    if (checkIcon) checkIcon.classList.add('opacity-0');
+                }
+            });
+
+            document.getElementById('selected-focus-count').textContent = `${selectedFocusAreas.length} area${selectedFocusAreas.length > 1 ? 's' : ''} selected`;
+        }
+
+        function selectDuration(dur) {
+            selectedDuration = dur;
+            document.querySelectorAll('.dur-opt').forEach(btn => {
+                btn.className = 'dur-opt p-3 rounded-xl border border-dark-border bg-dark-card text-gray-300 text-center font-bold text-xs transition';
+            });
+            const activeBtn = document.getElementById(`dur-${dur}`);
+            if (activeBtn) {
+                activeBtn.className = 'dur-opt active p-3 rounded-xl border border-accent-pink bg-accent-pink/20 text-white text-center font-bold text-xs transition';
+            }
+        }
+
+        function selectDifficulty(diff) {
+            selectedDifficulty = diff;
+            document.querySelectorAll('.diff-opt').forEach(btn => {
+                btn.className = 'diff-opt p-3 rounded-xl border border-dark-border bg-dark-card text-gray-300 text-center font-bold text-xs transition';
+            });
+            const activeBtn = document.getElementById(`diff-${diff}`);
+            if (activeBtn) {
+                activeBtn.className = 'diff-opt active p-3 rounded-xl border border-accent-pink bg-accent-pink/20 text-white text-center font-bold text-xs transition';
+            }
+        }
+
+        function toggleRidingToday(checked) {
+            isRidingToday = checked;
+            const badge = document.getElementById('sidebar-riding-badge');
+            if (checked) {
+                badge.textContent = 'ACTIVE';
+                badge.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40';
+            } else {
+                badge.textContent = 'INACTIVE';
+                badge.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gray-800 text-gray-400';
+            }
+        }
+
+        // --- ROUTINE GENERATOR ENGINE ---
+        function generateCustomRoutine() {
+            if (selectedFocusAreas.length === 0) {
+                alert('Please select at least one focus area!');
+                return;
+            }
+
+            // 1. Calculate Exercise & Set Counts
+            let targetExCount = 4;
+            if (selectedDuration === 'Short') targetExCount = 3;
+            if (selectedDuration === 'Long') targetExCount = 6;
+
+            let setsPerEx = 3;
+            if (selectedDifficulty === 'Easy') setsPerEx = 2;
+            if (selectedDifficulty === 'Hard') setsPerEx = 4;
+
+            // Scale leg sets down if "Riding Today" is checked so legs aren't sore
+            if (isRidingToday) {
+                setsPerEx = Math.min(setsPerEx, RIDING_TODAY_MODIFIERS.maxLegSets);
+            }
+
+            // 2. Aggregate exercises from chosen focus areas
+            let compiledPool = [];
+            let chosenAreas = [...selectedFocusAreas];
+
+            if (isRidingToday && !chosenAreas.includes('Horse Riding')) {
+                chosenAreas.push('Horse Riding');
+            }
+
+            chosenAreas.forEach(area => {
+                if (TARGET_EXERCISES[area]) {
+                    TARGET_EXERCISES[area].forEach(ex => {
+                        compiledPool.push({ ...ex, targetArea: area });
+                    });
+                }
+            });
+
+            // Shuffle pool
+            compiledPool = compiledPool.sort(() => 0.5 - Math.random());
+
+            // Deduplicate exercise names
+            const seenNames = new Set();
+            const selectedExercises = [];
+
+            for (let ex of compiledPool) {
+                if (!seenNames.has(ex.name) && selectedExercises.length < targetExCount) {
+                    seenNames.add(ex.name);
+
+                    // Build interactive sets
+                    const setArray = [];
+                    for (let s = 1; s <= setsPerEx; s++) {
+                        setArray.push({ setNum: s, completed: false });
+                    }
+
+                    selectedExercises.push({
+                        id: 'ex_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                        name: ex.name,
+                        targetArea: ex.targetArea,
+                        reps: ex.reps,
+                        inst: ex.inst,
+                        riderTip: ex.riderTip || 'Builds overall posture and body stability.',
+                        rest: ex.rest || 45,
+                        sets: setArray
+                    });
+                }
+            }
+
+            // Create Master Active Session State
+            activeWorkout = {
+                id: 'session_' + Date.now(),
+                title: `${chosenAreas.join(' & ')} Workout`,
+                focusAreas: chosenAreas,
+                duration: selectedDuration,
+                difficulty: selectedDifficulty,
+                isRidingToday: isRidingToday,
+                startTime: Date.now(),
+                exercises: selectedExercises
+            };
+
+            saveStateData();
+            renderActiveWorkoutUI();
+            toggleGeneratorView(false);
+
+            // Scroll smoothly into view
+            document.getElementById('active-workout-view').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- RENDER DYNAMIC ACTIVE WORKOUT ---
+        function renderActiveWorkoutUI() {
+            if (!activeWorkout) return;
+
+            document.getElementById('active-workout-name').textContent = activeWorkout.title;
+
+            // Render tags
+            const tagsContainer = document.getElementById('active-workout-tags');
+            tagsContainer.innerHTML = `
+                ${activeWorkout.focusAreas.map(f => `<span class="text-[10px] font-bold text-accent-pink bg-accent-pink/10 border border-accent-pink/30 px-2.5 py-0.5 rounded-full uppercase">${f}</span>`).join('')}
+                <span class="text-[10px] font-bold text-accent-teal bg-accent-teal/10 border border-accent-teal/30 px-2.5 py-0.5 rounded-full uppercase">${activeWorkout.duration}</span>
+                <span class="text-[10px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/30 px-2.5 py-0.5 rounded-full uppercase">${activeWorkout.difficulty}</span>
+            `;
+
+            // Rider Banner
+            const riderBanner = document.getElementById('horse-riding-alert-banner');
+            if (activeWorkout.isRidingToday) {
+                riderBanner.classList.remove('hidden');
+            } else {
+                riderBanner.classList.add('hidden');
+            }
+
+            // Render Exercise Cards
+            const container = document.getElementById('active-exercise-cards-container');
+            container.innerHTML = activeWorkout.exercises.map((ex, exIdx) => `
+                <div class="glass-card p-5 rounded-2xl border border-dark-border space-y-3">
+                    <div class="flex justify-between items-start gap-2">
+                        <div>
+                            <span class="text-[10px] font-extrabold uppercase text-accent-pink bg-accent-pink/15 px-2 py-0.5 rounded-md inline-block mb-1">${ex.targetArea} Focus</span>
+                            <h4 class="text-base font-extrabold text-white flex items-center gap-2">
+                                ${escapeHtml(ex.name)}
+                            </h4>
+                            <p class="text-xs text-gray-400 mt-1">${escapeHtml(ex.inst)}</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <button onclick="openExerciseGuideModal('${ex.targetArea}', '${escapeHtml(ex.name)}', '${escapeHtml(ex.inst)}', '${escapeHtml(ex.riderTip)}')" class="p-2 text-amber-400 bg-amber-500/10 rounded-xl hover:bg-amber-500/20 text-xs font-bold flex items-center gap-1" title="View Guide & Rider Tip">
+                                <i data-lucide="help-circle" class="w-4 h-4"></i> Guide
+                            </button>
+                            <button onclick="removeExerciseFromActive(${exIdx})" class="text-gray-500 hover:text-red-400 p-2">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Target Specs -->
+                    <div class="flex items-center gap-4 text-xs font-semibold text-accent-teal bg-dark-bg p-2.5 rounded-xl border border-dark-border">
+                        <span><strong class="text-gray-400">Target:</strong> ${ex.reps}</span>
+                        <span>•</span>
+                        <span><strong class="text-gray-400">Rest:</strong> ${ex.rest}s</span>
+                    </div>
+
+                    <!-- Interactive Set Tick Checkboxes -->
+                    <div class="flex flex-wrap items-center gap-3 pt-1">
+                        ${ex.sets.map((s, setIdx) => `
+                            <button onclick="toggleSetCheck(${exIdx}, ${setIdx}, ${ex.rest})" 
+                                class="px-4 py-2.5 rounded-xl text-xs font-extrabold transition flex items-center gap-2 ${s.completed ? 'bg-emerald-400 text-dark-bg shadow-md' : 'bg-dark-bg border border-dark-border text-gray-300 hover:border-accent-pink'}">
+                                <i data-lucide="${s.completed ? 'check-circle-2' : 'circle'}" class="w-4 h-4"></i>
+                                Set ${s.setNum}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            updateWorkoutProgress();
+            startWorkoutStopwatch();
+            lucide.createIcons();
+        }
+
+        // --- SET CHECKING & REST TIMER TRIGGER ---
+        function toggleSetCheck(exIdx, setIdx, restTime) {
+            if (!activeWorkout) return;
+            const targetSet = activeWorkout.exercises[exIdx].sets[setIdx];
+            targetSet.completed = !targetSet.completed;
+
+            saveStateData();
+            renderActiveWorkoutUI();
+
+            // Auto trigger rest timer on set completion
+            if (targetSet.completed) {
+                startRestTimer(restTime);
+            }
+        }
+
+        function updateWorkoutProgress() {
+            if (!activeWorkout) return;
+            let totalSets = 0;
+            let doneSets = 0;
+
+            activeWorkout.exercises.forEach(ex => {
+                ex.sets.forEach(s => {
+                    totalSets++;
+                    if (s.completed) doneSets++;
+                });
+            });
+
+            const pct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
+            document.getElementById('progress-percentage').textContent = `${pct}% Completed (${doneSets}/${totalSets} sets)`;
+            document.getElementById('progress-bar-fill').style.width = `${pct}%`;
+
+            if (pct === 100 && totalSets > 0) {
+                confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+            }
+        }
+
+        // --- STOPWATCH & TIMER ENGINE ---
+        function startWorkoutStopwatch() {
+            if (stopwatchInterval) clearInterval(stopwatchInterval);
+            stopwatchInterval = setInterval(() => {
+                if (!activeWorkout) return;
+                const elapsedSec = Math.floor((Date.now() - activeWorkout.startTime) / 1000);
+                const mins = Math.floor(elapsedSec / 60);
+                const secs = elapsedSec % 60;
+                document.getElementById('workout-stopwatch').textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function startRestTimer(seconds) {
+            restTimeRemaining = seconds;
+            document.getElementById('rest-timer-widget').classList.remove('hidden');
+            updateRestTimerUI();
+
+            if (restTimerInterval) clearInterval(restTimerInterval);
+            restTimerInterval = setInterval(() => {
+                restTimeRemaining--;
+                updateRestTimerUI();
+
+                if (restTimeRemaining <= 0) {
+                    clearInterval(restTimerInterval);
+                    if (soundEnabled) playBeepSound();
+                    closeRestTimer();
+                }
+            }, 1000);
+        }
+
+        function updateRestTimerUI() {
+            const mins = Math.floor(restTimeRemaining / 60);
+            const secs = restTimeRemaining % 60;
+            document.getElementById('rest-timer-display').textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function adjustRestTime(amt) {
+            restTimeRemaining = Math.max(0, restTimeRemaining + amt);
+            updateRestTimerUI();
+        }
+
+        function closeRestTimer() {
+            if (restTimerInterval) clearInterval(restTimerInterval);
+            document.getElementById('rest-timer-widget').classList.add('hidden');
+        }
+
+        function toggleAudioBeep() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('audio-toggle-btn');
+            btn.innerHTML = `<i data-lucide="${soundEnabled ? 'volume-2' : 'volume-x'}" class="w-4 h-4"></i>`;
+            lucide.createIcons();
+        }
+
+        function playBeepSound() {
+            const sound = document.getElementById('beep-sound');
+            if (sound) sound.play().catch(() => {});
+        }
+
+        // --- EXERCISE GUIDE MODAL ---
+        function openExerciseGuideModal(area, title, how, riderTip) {
+            document.getElementById('modal-guide-area').textContent = area + ' Focus';
+            document.getElementById('modal-guide-title').textContent = title;
+            document.getElementById('modal-guide-how').textContent = how;
+            document.getElementById('modal-guide-rider').textContent = riderTip;
+            document.getElementById('modal-exercise-guide').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // --- WORKOUT LOGGING & FINISHING ---
+        function finishCurrentWorkout() {
+            if (!activeWorkout) return;
+
+            let totalSets = 0;
+            let doneSets = 0;
+            activeWorkout.exercises.forEach(e => {
+                e.sets.forEach(s => {
+                    totalSets++;
+                    if (s.completed) doneSets++;
+                });
+            });
+
+            const durationFormatted = document.getElementById('workout-stopwatch').textContent;
+
+            const logEntry = {
+                id: activeWorkout.id,
+                title: activeWorkout.title,
+                focusAreas: activeWorkout.focusAreas,
+                duration: durationFormatted,
+                completedSets: doneSets,
+                totalSets: totalSets,
+                isRidingToday: activeWorkout.isRidingToday,
+                date: new Date().toISOString()
+            };
+
+            workoutLogs.unshift(logEntry);
+            activeWorkout = null;
+            if (stopwatchInterval) clearInterval(stopwatchInterval);
+
+            saveStateData();
+            loadStateData();
+            renderHistoryLogs();
+            updateStreakCounter();
+
+            toggleGeneratorView(true);
+            confetti({ particleCount: 130, spread: 90, origin: { y: 0.5 } });
+        }
+
+        function removeExerciseFromActive(exIdx) {
+            if (!activeWorkout) return;
+            activeWorkout.exercises.splice(exIdx, 1);
+            saveStateData();
+            renderActiveWorkoutUI();
+        }
+
+        function toggleGeneratorView(showControls = true) {
+            const controls = document.getElementById('generator-controls-card');
+            const activeView = document.getElementById('active-workout-view');
+
+            if (showControls) {
+                controls.classList.remove('hidden');
+                activeView.classList.add('hidden');
+            } else {
+                controls.classList.add('hidden');
+                activeView.classList.remove('hidden');
+            }
+        }
+
+        // --- CUSTOM EXERCISE MODAL ---
+        function openAddCustomExModal() {
+            document.getElementById('modal-add-ex').classList.remove('hidden');
+        }
+
+        function appendCustomExerciseToActive() {
+            if (!activeWorkout) return;
+            const title = document.getElementById('custom-ex-title').value.trim();
+            const inst = document.getElementById('custom-ex-inst').value.trim();
+            const setsNum = parseInt(document.getElementById('custom-ex-sets').value) || 3;
+            const reps = document.getElementById('custom-ex-reps').value.trim() || '12 reps';
+            const rest = parseInt(document.getElementById('custom-ex-rest').value) || 45;
+
+            if (!title) return;
+
+            const setsArray = [];
+            for (let s = 1; s <= setsNum; s++) {
+                setsArray.push({ setNum: s, completed: false });
+            }
+
+            activeWorkout.exercises.push({
+                id: 'custom_' + Date.now(),
+                name: title,
+                targetArea: 'Custom',
+                inst: inst || 'Custom target exercise',
+                riderTip: 'Enhances general fitness and rider body awareness.',
+                reps: reps,
+                rest: rest,
+                sets: setsArray
+            });
+
+            saveStateData();
+            closeModal('modal-add-ex');
+            renderActiveWorkoutUI();
+        }
+
+        // --- TEMPLATES / PRESETS ---
+        function saveCurrentRoutineAsTemplate() {
+            if (!activeWorkout) return;
+            const template = {
+                id: 'tmpl_' + Date.now(),
+                title: activeWorkout.title,
+                focusAreas: activeWorkout.focusAreas,
+                exercises: activeWorkout.exercises
+            };
+            savedTemplates.push(template);
+            saveStateData();
+            renderSavedTemplates();
+            alert('Routine saved into Saved Routines tab!');
+        }
+
+        function renderSavedTemplates() {
+            const container = document.getElementById('saved-templates-grid');
+            if (savedTemplates.length === 0) {
+                container.innerHTML = `<p class="col-span-full text-xs text-gray-500 py-8 text-center italic">No saved routines yet. Tap the bookmark button during an active workout to save it.</p>`;
+                return;
+            }
+
+            container.innerHTML = savedTemplates.map((tmpl, idx) => `
+                <div class="glass-card p-5 rounded-2xl border border-dark-border flex flex-col justify-between">
+                    <div>
+                        <div class="flex flex-wrap gap-1 mb-1.5">
+                            ${tmpl.focusAreas.map(f => `<span class="text-[9px] font-bold text-accent-pink bg-accent-pink/15 px-2 py-0.5 rounded-full uppercase">${f}</span>`).join('')}
+                        </div>
+                        <h4 class="text-base font-bold text-white mb-1">${escapeHtml(tmpl.title)}</h4>
+                        <p class="text-xs text-gray-400">${tmpl.exercises.length} exercises</p>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="launchTemplate('${tmpl.id}')" class="flex-1 py-2 bg-accent-pink text-white font-bold rounded-xl text-xs hover:bg-pink-600">Start Routine</button>
+                        <button onclick="deleteTemplate(${idx})" class="p-2 text-gray-500 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function launchTemplate(tmplId) {
+            const tmpl = savedTemplates.find(t => t.id === tmplId);
+            if (!tmpl) return;
+
+            activeWorkout = {
+                id: 'session_' + Date.now(),
+                title: tmpl.title,
+                focusAreas: tmpl.focusAreas,
+                duration: 'Custom',
+                difficulty: 'Medium',
+                isRidingToday: tmpl.focusAreas.includes('Horse Riding'),
+                startTime: Date.now(),
+                exercises: JSON.parse(JSON.stringify(tmpl.exercises))
+            };
+
+            saveStateData();
+            renderActiveWorkoutUI();
+            switchTab('generator');
+            toggleGeneratorView(false);
+        }
+
+        function deleteTemplate(idx) {
+            savedTemplates.splice(idx, 1);
+            saveStateData();
+            renderSavedTemplates();
+        }
+
+        // --- HISTORY & STREAKS ---
+        function renderHistoryLogs() {
+            const container = document.getElementById('history-logs-container');
+            if (workoutLogs.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 py-8 text-center italic">No completed workouts recorded yet.</p>`;
+                return;
+            }
+
+            container.innerHTML = workoutLogs.map((log, idx) => `
+                <div class="p-4 rounded-2xl bg-dark-bg border border-dark-border flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 rounded-xl ${log.isRidingToday ? 'bg-amber-500/15 text-amber-400' : 'bg-emerald-500/15 text-emerald-400'}">
+                            <i data-lucide="${log.isRidingToday ? 'sparkles' : 'check-circle'}" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="text-sm font-bold text-white">${escapeHtml(log.title)}</h5>
+                            <p class="text-[11px] text-gray-400 mt-0.5">${new Date(log.date).toLocaleDateString()} • ${log.duration} • ${log.completedSets}/${log.totalSets} sets completed</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteLogEntry(${idx})" class="text-gray-500 hover:text-red-400 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function deleteLogEntry(idx) {
+            workoutLogs.splice(idx, 1);
+            saveStateData();
+            loadStateData();
+            renderHistoryLogs();
+            updateStreakCounter();
+        }
+
+        function updateStreakCounter() {
+            const count = workoutLogs.length;
+            document.getElementById('streak-counter-top').textContent = `${count} Workout${count === 1 ? '' : 's'}`;
+            document.getElementById('stat-current-streak').textContent = `${count} Workout${count === 1 ? '' : 's'}`;
+        }
+
+        // --- UTILS ---
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function resetDataConfirmation() {
+            if (confirm('Reset all logged workouts and saved templates?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
